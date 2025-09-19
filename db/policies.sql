@@ -5,6 +5,17 @@ alter table inquiries enable row level security;
 alter table bookings enable row level security;
 alter table media_gallery enable row level security;
 alter table site_settings enable row level security;
+alter table profiles enable row level security;
+
+-- Profiles: users can read/update their own row
+create policy if not exists profiles_self_read on profiles
+for select using (auth.uid() = id);
+
+create policy if not exists profiles_self_upsert on profiles
+for insert with check (auth.uid() = id);
+
+create policy if not exists profiles_self_update on profiles
+for update using (auth.uid() = id);
 
 -- Destinations: public read active rows
 create policy if not exists destinations_public_read on destinations

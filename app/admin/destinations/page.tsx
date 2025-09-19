@@ -52,42 +52,22 @@ export default function AdminDestinationsPage() {
 
   const loadDestinations = async () => {
     try {
-      // Mock data - replace with real Supabase queries
-      const mockDestinations: Destination[] = [
-        {
-          id: "1",
-          name: "Maasai Mara National Reserve",
-          country: "Kenya",
-          description: "World-famous wildlife reserve known for the Great Migration",
-          featured_image: "/maasai-mara-safari.png",
-          packages_count: 5,
-          status: "active",
-          created_at: "2024-01-15T10:00:00Z",
-        },
-        {
-          id: "2",
-          name: "Diani Beach",
-          country: "Kenya",
-          description: "Pristine white sand beach on the Indian Ocean coast",
-          featured_image: "/diani-beach-kenya.png",
-          packages_count: 3,
-          status: "active",
-          created_at: "2024-01-20T14:30:00Z",
-        },
-        {
-          id: "3",
-          name: "Mount Kenya",
-          country: "Kenya",
-          description: "Africa's second highest mountain with diverse ecosystems",
-          featured_image: "/mount-kenya-hikers.png",
-          packages_count: 2,
-          status: "active",
-          created_at: "2024-02-01T09:15:00Z",
-        },
-      ]
+      const res = await fetch("/api/destinations")
+      if (!res.ok) throw new Error("Failed to load destinations")
+      const json = await res.json()
+      const rows: Destination[] = (json.destinations || []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        country: d.country || "Kenya",
+        description: d.description || "",
+        featured_image: d.featured_image || d.image_url || "/placeholder.svg",
+        packages_count: d.packages_count ?? 0,
+        status: d.status || "active",
+        created_at: d.created_at,
+      }))
 
-      setDestinations(mockDestinations)
-      setFilteredDestinations(mockDestinations)
+      setDestinations(rows)
+      setFilteredDestinations(rows)
     } catch (error) {
       console.error("Error loading destinations:", error)
     } finally {

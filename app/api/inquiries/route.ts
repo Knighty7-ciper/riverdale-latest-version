@@ -27,6 +27,50 @@ const InquirySchema = z.object({
   specialRequests: z.string().optional().nullable(),
 })
 
+export async function GET(req: NextRequest) {
+  if (!supabase) {
+    return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })
+  }
+
+  try {
+    const { searchParams } = new URL(req.url)
+    const search = searchParams.get("search")?.trim()
+    const status = searchParams.get("status")?.trim()
+    const limit = Number.parseInt(searchParams.get("limit") || "50")
+
+    let query = supabase
+      .from("inquiries")
+      .select(
+        "id, verification_id, customer_name, customer_email, customer_phone, package_name, adults, children, quoted_amount, inquiry_status, created_at, preferred_start_date, special_requests, admin_notes",
+      )
+      .order("created_at", { ascending: false })
+      .limit(Number.isFinite(limit) ? limit : 50)
+
+    if (status && status !== "all") {
+      query = query.eq("inquiry_status", status)
+    }
+
+    if (search) {
+      const like = `%${search}%`
+      query = query.or(
+        `customer_name.ilike.${like},customer_email.ilike.${like},verification_id.ilike.${like},package_name.ilike.${like}`,
+      )
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("Error fetching inquiries:", error)
+      return NextResponse.json({ error: "Failed to fetch inquiries" }, { status: 500 })
+    }
+
+    return NextResponse.json({ inquiries: data || [] })
+  } catch (e) {
+    console.error("Unhandled error in inquiries GET:", e)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   if (!supabase) {
     return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 })

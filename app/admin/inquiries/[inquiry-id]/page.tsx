@@ -38,14 +38,24 @@ export default function InquiryDetailPage() {
   const params = useParams()
 
   useEffect(() => {
-    // Check admin authentication
-    const adminAuth = localStorage.getItem("adminAuth")
-    if (!adminAuth) {
-      router.push("/admin")
-      return
+    const checkAuth = async () => {
+      const { createClientComponentClient } = await import("@supabase/auth-helpers-nextjs")
+      const supabase = createClientComponentClient()
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        router.push("/admin")
+        return
+      }
+      const user = sessionData.session.user
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+      if (!profile || profile.role !== "admin") {
+        await supabase.auth.signOut()
+        router.push("/admin")
+        return
+      }
+      loadInquiryDetail()
     }
-
-    loadInquiryDetail()
+    checkAuth()
   }, [router, params])
 
   const loadInquiryDetail = async () => {

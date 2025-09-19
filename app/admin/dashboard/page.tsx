@@ -42,15 +42,24 @@ export default function AdminDashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check admin authentication
-    const adminAuth = localStorage.getItem("adminAuth")
-    if (!adminAuth) {
-      router.push("/admin")
-      return
+    const checkAuth = async () => {
+      const { createClientComponentClient } = await import("@supabase/auth-helpers-nextjs")
+      const supabase = createClientComponentClient()
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        router.push("/admin")
+        return
+      }
+      const user = sessionData.session.user
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+      if (!profile || profile.role !== "admin") {
+        await supabase.auth.signOut()
+        router.push("/admin")
+        return
+      }
+      loadDashboardData()
     }
-
-    // Load dashboard data
-    loadDashboardData()
+    checkAuth()
   }, [router])
 
   const loadDashboardData = async () => {
@@ -126,8 +135,10 @@ export default function AdminDashboardPage() {
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
-                onClick={() => {
-                  localStorage.removeItem("adminAuth")
+                onClick={async () => {
+                  const { createClientComponentClient } = await import("@supabase/auth-helpers-nextjs")
+                  const supabase = createClientComponentClient()
+                  await supabase.auth.signOut()
                   router.push("/admin")
                 }}
                 className="border-gray-600 text-gray-300 hover:bg-gray-700"

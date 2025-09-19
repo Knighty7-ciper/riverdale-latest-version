@@ -320,7 +320,7 @@ export default function AdminDashboardPage() {
 
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-400 mb-2">
-                    {Math.round((stats.confirmedBookings / stats.totalInquiries) * 100)}%
+                    {stats.totalInquiries > 0 ? Math.round((stats.confirmedBookings / stats.totalInquiries) * 100) : 0}%
                   </div>
                   <p className="text-gray-400">Conversion Rate</p>
                   <p className="text-gray-500 text-sm mt-2">Inquiries to bookings</p>

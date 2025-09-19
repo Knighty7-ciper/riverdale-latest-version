@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
       adminEmail,
     } = body
 
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY is not configured")
+      return NextResponse.json({ success: false, error: "Email service not configured" }, { status: 500 })
+    }
+
     const { data, error } = await resend.emails.send({
       from: "Riverdale Kenya Safaris <onboarding@resend.dev>",
       to: [adminEmail],

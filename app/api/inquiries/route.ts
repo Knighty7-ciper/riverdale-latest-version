@@ -110,7 +110,9 @@ export async function POST(req: NextRequest) {
 
     // Fire-and-forget notification (do not block response)
     try {
-      await fetch("/api/send-inquiry-notification", {
+      const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || ""
+      const url = origin ? `${origin}/api/send-inquiry-notification` : "/api/send-inquiry-notification"
+      await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

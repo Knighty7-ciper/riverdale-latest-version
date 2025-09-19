@@ -64,6 +64,11 @@ export default function AdminInquiriesPage() {
     setFilteredInquiries(filtered)
   }, [inquiries, searchTerm, statusFilter])
 
+  useEffect(() => {
+    loadInquiries()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter])
+
   const loadInquiries = async () => {
     try {
       const params = new URLSearchParams()

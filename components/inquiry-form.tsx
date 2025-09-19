@@ -31,11 +31,6 @@ export function InquiryForm({ packageId, packageName, packagePrice }: InquiryFor
   const [verificationId, setVerificationId] = useState("")
   const [error, setError] = useState("")
 
-  // Initialize Supabase client
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
 
   const generateVerificationId = () => {
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, "")

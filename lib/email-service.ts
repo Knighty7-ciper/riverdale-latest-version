@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 
-const resend = new Resend("re_Wi3CN4PA_612egiqhuqHypLgBJoX2Ygz7")
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+const resend = new Resend(RESEND_API_KEY || "")
 
 export interface EmailTemplate {
   subject: string
@@ -46,6 +47,11 @@ class EmailService {
 
   private async sendEmail(to: string, template: EmailTemplate): Promise<boolean> {
     try {
+      if (!RESEND_API_KEY) {
+        console.error("RESEND_API_KEY is not configured")
+        return false
+      }
+
       const { data, error } = await resend.emails.send({
         from: "Riverdale Kenya Safaris <onboarding@resend.dev>",
         to: [to],

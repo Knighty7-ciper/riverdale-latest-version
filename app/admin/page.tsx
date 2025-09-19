@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Mail, Lock, Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
@@ -17,21 +18,38 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const supabase = createClientComponentClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
 
-    // Temporary admin credentials for testing
-    if (email === "admin@riverdale.travel" && password === "riverdale2024") {
-      localStorage.setItem("adminAuth", "true")
-      router.push("/admin/dashboard")
-    } else {
-      setError("Invalid credentials. Use admin@riverdale.travel / riverdale2024")
-    }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
 
-    setLoading(false)
+      // Verify admin role
+      const user = data.user
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id)
+        .single()
+
+      if (!profile || profile.role !== "admin") {
+        await supabase.auth.signOut()
+        setError("Your account is not authorized for admin access.")
+        setLoading(false)
+        return
+      }
+
+      router.push("/admin/dashboard")
+    } catch (err: any) {
+      setError(err.message || "Login failed")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -108,9 +126,7 @@ export default function AdminLoginPage() {
             </form>
 
             <div className="mt-6 p-4 bg-gray-700/50 rounded-lg">
-              <p className="text-gray-300 text-sm mb-2">Test Credentials:</p>
-              <p className="text-gray-400 text-xs">Email: admin@riverdale.travel</p>
-              <p className="text-gray-400 text-xs">Password: riverdale2024</p>
+              <p className="text-gray-300 text-sm">Use your admin email and password to sign in.</p>
             </div>
           </CardContent>
         </Card>

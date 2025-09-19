@@ -33,14 +33,24 @@ export default function AdminInquiriesPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check admin authentication
-    const adminAuth = localStorage.getItem("adminAuth")
-    if (!adminAuth) {
-      router.push("/admin")
-      return
+    const checkAuth = async () => {
+      const { createClientComponentClient } = await import("@supabase/auth-helpers-nextjs")
+      const supabase = createClientComponentClient()
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        router.push("/admin")
+        return
+      }
+      const user = sessionData.session.user
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+      if (!profile || profile.role !== "admin") {
+        await supabase.auth.signOut()
+        router.push("/admin")
+        return
+      }
+      loadInquiries()
     }
-
-    loadInquiries()
+    checkAuth()
   }, [router])
 
   useEffect(() => {
@@ -64,84 +74,38 @@ export default function AdminInquiriesPage() {
     setFilteredInquiries(filtered)
   }, [inquiries, searchTerm, statusFilter])
 
+  useEffect(() => {
+    loadInquiries()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter])
+
   const loadInquiries = async () => {
     try {
-      // Mock data - replace with real Supabase queries
-      const mockInquiries: Inquiry[] = [
-        {
-          id: "1",
-          verification_id: "RVD-20241215-7834",
-          customer_name: "Sarah Johnson",
-          customer_email: "sarah.j@email.com",
-          customer_phone: "+254 722 123 456",
-          package_name: "Maasai Mara Safari Adventure",
-          adults: 2,
-          children: 1,
-          quoted_amount: 185000,
-          inquiry_status: "pending",
-          created_at: "2024-12-15T10:30:00Z",
-          preferred_start_date: "2024-12-28",
-        },
-        {
-          id: "2",
-          verification_id: "RVD-20241215-9156",
-          customer_name: "Michael Chen",
-          customer_email: "m.chen@email.com",
-          customer_phone: "+254 711 987 654",
-          package_name: "Diani Beach Getaway",
-          adults: 2,
-          children: 0,
-          quoted_amount: 95000,
-          inquiry_status: "contacted",
-          created_at: "2024-12-15T08:15:00Z",
-          preferred_start_date: "2025-01-15",
-        },
-        {
-          id: "3",
-          verification_id: "RVD-20241214-3421",
-          customer_name: "Emma Williams",
-          customer_email: "emma.w@email.com",
-          customer_phone: "+254 733 456 789",
-          package_name: "Mount Kenya Trekking",
-          adults: 4,
-          children: 0,
-          quoted_amount: 240000,
-          inquiry_status: "quoted",
-          created_at: "2024-12-14T16:45:00Z",
-          preferred_start_date: "2025-02-10",
-        },
-        {
-          id: "4",
-          verification_id: "RVD-20241214-1567",
-          customer_name: "David Brown",
-          customer_email: "d.brown@email.com",
-          customer_phone: "+254 700 555 123",
-          package_name: "Amboseli Elephant Safari",
-          adults: 3,
-          children: 2,
-          quoted_amount: 320000,
-          inquiry_status: "confirmed",
-          created_at: "2024-12-14T12:20:00Z",
-          preferred_start_date: "2024-12-30",
-        },
-        {
-          id: "5",
-          verification_id: "RVD-20241213-8901",
-          customer_name: "Lisa Anderson",
-          customer_email: "lisa.a@email.com",
-          customer_phone: "+254 722 777 888",
-          package_name: "Lake Nakuru Flamingo Safari",
-          adults: 1,
-          children: 0,
-          quoted_amount: null,
-          inquiry_status: "pending",
-          created_at: "2024-12-13T14:30:00Z",
-          preferred_start_date: "2025-01-20",
-        },
-      ]
+      const params = new URLSearchParams()
+      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter)
+      if (searchTerm) params.set("search", searchTerm)
 
-      setInquiries(mockInquiries)
-      setFilteredInquiries(mockInquiries)
+      const res = await fetch(`/api/inquiries?${params.toString()}`)
+      if (!res.ok) throw new Error("Failed to load inquiries")
+      const json = await res.json()
+
+      const rows: Inquiry[] = (json.inquiries || []).map((x: any) => ({
+        id: x.id,
+        verification_id: x.verification_id,
+        customer_name: x.customer_name,
+        customer_email: x.customer_email,
+        customer_phone: x.customer_phone,
+        package_name: x.package_name,
+        adults: x.adults ?? 0,
+        children: x.children ?? 0,
+        quoted_amount: x.quoted_amount ?? null,
+        inquiry_status: x.inquiry_status,
+        created_at: x.created_at,
+        preferred_start_date: x.preferred_start_date ?? null,
+      }))
+
+      setInquiries(rows)
+      setFilteredInquiries(rows)
     } catch (error) {
       console.error("Error loading inquiries:", error)
     } finally {

@@ -42,70 +42,42 @@ export default function AdminDashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check admin authentication
-    const adminAuth = localStorage.getItem("adminAuth")
-    if (!adminAuth) {
-      router.push("/admin")
-      return
+    const checkAuth = async () => {
+      const { createClientComponentClient } = await import("@supabase/auth-helpers-nextjs")
+      const supabase = createClientComponentClient()
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        router.push("/admin")
+        return
+      }
+      const user = sessionData.session.user
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+      if (!profile || profile.role !== "admin") {
+        await supabase.auth.signOut()
+        router.push("/admin")
+        return
+      }
+      loadDashboardData()
     }
-
-    // Load dashboard data
-    loadDashboardData()
+    checkAuth()
   }, [router])
 
   const loadDashboardData = async () => {
     try {
-      // Mock data for demonstration - replace with real Supabase queries
-      const mockStats: DashboardStats = {
-        totalInquiries: 247,
-        pendingInquiries: 12,
-        confirmedBookings: 89,
-        totalRevenue: 12450000,
-        monthlyGrowth: 23.5,
-        recentInquiries: [
-          {
-            id: "1",
-            verification_id: "RVD-20241215-7834",
-            customer_name: "Sarah Johnson",
-            customer_email: "sarah.j@email.com",
-            customer_phone: "+254 722 123 456",
-            package_name: "Maasai Mara Safari Adventure",
-            adults: 2,
-            children: 1,
-            quoted_amount: 185000,
-            inquiry_status: "pending",
-            created_at: "2024-12-15T10:30:00Z",
-          },
-          {
-            id: "2",
-            verification_id: "RVD-20241215-9156",
-            customer_name: "Michael Chen",
-            customer_email: "m.chen@email.com",
-            customer_phone: "+254 711 987 654",
-            package_name: "Diani Beach Getaway",
-            adults: 2,
-            children: 0,
-            quoted_amount: 95000,
-            inquiry_status: "contacted",
-            created_at: "2024-12-15T08:15:00Z",
-          },
-          {
-            id: "3",
-            verification_id: "RVD-20241214-3421",
-            customer_name: "Emma Williams",
-            customer_email: "emma.w@email.com",
-            customer_phone: "+254 733 456 789",
-            package_name: "Mount Kenya Trekking",
-            adults: 4,
-            children: 0,
-            quoted_amount: 240000,
-            inquiry_status: "quoted",
-            created_at: "2024-12-14T16:45:00Z",
-          },
-        ],
+      const res = await fetch("/api/admin/stats")
+      if (!res.ok) throw new Error("Failed to load stats")
+      const json = await res.json()
+
+      const apiStats: DashboardStats = {
+        totalInquiries: json.totalInquiries || 0,
+        pendingInquiries: json.pendingInquiries || 0,
+        confirmedBookings: json.confirmedBookings || 0,
+        totalRevenue: json.totalRevenue || 0,
+        monthlyGrowth: json.monthlyGrowth || 0,
+        recentInquiries: json.recentInquiries || [],
       }
 
-      setStats(mockStats)
+      setStats(apiStats)
     } catch (error) {
       console.error("Error loading dashboard data:", error)
     } finally {
@@ -163,8 +135,10 @@ export default function AdminDashboardPage() {
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
-                onClick={() => {
-                  localStorage.removeItem("adminAuth")
+                onClick={async () => {
+                  const { createClientComponentClient } = await import("@supabase/auth-helpers-nextjs")
+                  const supabase = createClientComponentClient()
+                  await supabase.auth.signOut()
                   router.push("/admin")
                 }}
                 className="border-gray-600 text-gray-300 hover:bg-gray-700"
@@ -357,7 +331,7 @@ export default function AdminDashboardPage() {
 
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-400 mb-2">
-                    {Math.round((stats.confirmedBookings / stats.totalInquiries) * 100)}%
+                    {stats.totalInquiries > 0 ? Math.round((stats.confirmedBookings / stats.totalInquiries) * 100) : 0}%
                   </div>
                   <p className="text-gray-400">Conversion Rate</p>
                   <p className="text-gray-500 text-sm mt-2">Inquiries to bookings</p>
@@ -365,7 +339,7 @@ export default function AdminDashboardPage() {
 
                 <div className="text-center">
                   <div className="text-3xl font-bold text-purple-400 mb-2">
-                    KES {Math.round(stats.totalRevenue / stats.confirmedBookings).toLocaleString()}
+                    KES {stats.confirmedBookings > 0 ? Math.round(stats.totalRevenue / stats.confirmedBookings).toLocaleString() : 0}
                   </div>
                   <p className="text-gray-400">Average Booking Value</p>
                   <p className="text-gray-500 text-sm mt-2">Per confirmed booking</p>

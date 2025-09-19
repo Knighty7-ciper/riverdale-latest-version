@@ -31,11 +31,6 @@ export function InquiryForm({ packageId, packageName, packagePrice }: InquiryFor
   const [verificationId, setVerificationId] = useState("")
   const [error, setError] = useState("")
 
-  // Initialize Supabase client
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
 
   const generateVerificationId = () => {
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, "")
@@ -48,63 +43,31 @@ export function InquiryForm({ packageId, packageName, packagePrice }: InquiryFor
     setIsSubmitting(true)
     setError("")
 
-    const newVerificationId = generateVerificationId()
-
     try {
-      // Submit inquiry to Supabase
-      const { data, error: supabaseError } = await supabase
-        .from("inquiries")
-        .insert([
-          {
-            verification_id: newVerificationId,
-            customer_name: formData.name,
-            customer_email: formData.email,
-            customer_phone: formData.phone,
-            package_id: packageId,
-            package_name: packageName,
-            package_price: packagePrice,
-            preferred_start_date: formData.travelDate || null,
-            group_size: formData.groupSize ? Number.parseInt(formData.groupSize) : null,
-            special_requests: formData.specialRequests || null,
-            inquiry_status: "pending",
-            created_at: new Date().toISOString(),
-          },
-        ])
-        .select()
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          packageId,
+          packageName,
+          packagePrice,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          travelDate: formData.travelDate || null,
+          groupSize: formData.groupSize || null,
+          specialRequests: formData.specialRequests || null,
+        }),
+      })
 
-      if (supabaseError) {
-        throw new Error(supabaseError.message)
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to submit inquiry")
       }
 
-      // Send email notification to admin
-      try {
-        await fetch("/api/send-inquiry-notification", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            verificationId: newVerificationId,
-            customerName: formData.name,
-            customerEmail: formData.email,
-            customerPhone: formData.phone,
-            packageName,
-            packagePrice,
-            travelDate: formData.travelDate,
-            groupSize: formData.groupSize,
-            specialRequests: formData.specialRequests,
-            adminEmail: "bknglabs.dev@gmail.com",
-          }),
-        })
-      } catch (emailError) {
-        console.error("Email notification failed:", emailError)
-        // Don't fail the entire process if email fails
-      }
-
-      setVerificationId(newVerificationId)
+      setVerificationId(json.verificationId)
       setSubmitted(true)
 
-      // Reset form
       setFormData({
         name: "",
         email: "",

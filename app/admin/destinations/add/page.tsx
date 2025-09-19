@@ -28,10 +28,13 @@ export default function AddDestinationPage() {
     setLoading(true)
 
     try {
-      // Save destination to database
-      console.log("Creating destination:", formData)
+      const res = await fetch("/api/destinations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (!res.ok) throw new Error("Failed to create destination")
 
-      // Show success and redirect
       alert("Destination created successfully!")
       router.push("/admin/destinations")
     } catch (error) {

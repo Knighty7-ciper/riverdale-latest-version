@@ -97,16 +97,37 @@ export default function DestinationsPage() {
   ]
 
   useEffect(() => {
-    // Simulate API call - replace with actual Supabase query
     const fetchDestinations = async () => {
-      setLoading(true)
-      // TODO: Replace with actual Supabase query
-      // const { data, error } = await supabase.from('destinations').select('*')
-      setTimeout(() => {
-        setDestinations(mockDestinations)
-        setFilteredDestinations(mockDestinations)
+      try {
+        setLoading(true)
+        const params = new URLSearchParams()
+        if (categoryFilter && categoryFilter !== "all") params.set("category", categoryFilter)
+        const res = await fetch(`/api/destinations?${params.toString()}`)
+        if (!res.ok) throw new Error("Failed to load destinations")
+        const json = await res.json()
+        const rows: Destination[] = (json.destinations || []).map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          description: d.description,
+          location: d.location,
+          price_from: d.price_from ?? 0,
+          duration: d.duration || "",
+          max_group_size: d.max_group_size ?? 0,
+          rating: d.rating ?? 0,
+          reviews_count: d.reviews_count ?? 0,
+          image_url: d.image_url,
+          category: d.category || "Safari",
+          featured: !!d.featured,
+        }))
+        setDestinations(rows)
+        setFilteredDestinations(rows)
+      } catch (e) {
+        console.error(e)
+        setDestinations([])
+        setFilteredDestinations([])
+      } finally {
         setLoading(false)
-      }, 1000)
+      }
     }
 
     fetchDestinations()

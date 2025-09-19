@@ -38,40 +38,55 @@ export default function InquiryDetailPage() {
   const params = useParams()
 
   useEffect(() => {
-    // Check admin authentication
-    const adminAuth = localStorage.getItem("adminAuth")
-    if (!adminAuth) {
-      router.push("/admin")
-      return
+    const checkAuth = async () => {
+      const { createClientComponentClient } = await import("@supabase/auth-helpers-nextjs")
+      const supabase = createClientComponentClient()
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        router.push("/admin")
+        return
+      }
+      const user = sessionData.session.user
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+      if (!profile || profile.role !== "admin") {
+        await supabase.auth.signOut()
+        router.push("/admin")
+        return
+      }
+      loadInquiryDetail()
     }
-
-    loadInquiryDetail()
+    checkAuth()
   }, [router, params])
 
   const loadInquiryDetail = async () => {
     try {
-      // Mock data - replace with real Supabase query
-      const mockInquiry: InquiryDetail = {
-        id: params["inquiry-id"] as string,
-        verification_id: "RVD-20241215-7834",
-        customer_name: "Sarah Johnson",
-        customer_email: "sarah.j@email.com",
-        customer_phone: "+254 722 123 456",
-        package_name: "Maasai Mara Safari Adventure",
-        adults: 2,
-        children: 1,
-        quoted_amount: 185000,
-        inquiry_status: "pending",
-        created_at: "2024-12-15T10:30:00Z",
-        preferred_start_date: "2024-12-28",
-        special_requests: "Would prefer early morning game drives and vegetarian meals",
-        admin_notes: "Customer called back, very interested. Mentioned budget flexibility.",
+      const id = params["inquiry-id"] as string
+      const res = await fetch(`/api/inquiries/${id}`)
+      if (!res.ok) throw new Error("Failed to load inquiry detail")
+      const json = await res.json()
+      const x = json.inquiry
+
+      const detail: InquiryDetail = {
+        id: x.id,
+        verification_id: x.verification_id,
+        customer_name: x.customer_name,
+        customer_email: x.customer_email,
+        customer_phone: x.customer_phone,
+        package_name: x.package_name,
+        adults: x.adults ?? 0,
+        children: x.children ?? 0,
+        quoted_amount: x.quoted_amount ?? null,
+        inquiry_status: x.inquiry_status,
+        created_at: x.created_at,
+        preferred_start_date: x.preferred_start_date ?? null,
+        special_requests: x.special_requests ?? null,
+        admin_notes: x.admin_notes ?? null,
       }
 
-      setInquiry(mockInquiry)
-      setAdminNotes(mockInquiry.admin_notes || "")
-      setQuotedAmount(mockInquiry.quoted_amount?.toString() || "")
-      setStatus(mockInquiry.inquiry_status)
+      setInquiry(detail)
+      setAdminNotes(detail.admin_notes || "")
+      setQuotedAmount(detail.quoted_amount?.toString() || "")
+      setStatus(detail.inquiry_status)
     } catch (error) {
       console.error("Error loading inquiry detail:", error)
     } finally {
@@ -83,15 +98,18 @@ export default function InquiryDetailPage() {
     if (!inquiry) return
 
     try {
-      // Update inquiry in database
-      console.log("Updating inquiry:", {
-        id: inquiry.id,
-        admin_notes: adminNotes,
-        quoted_amount: quotedAmount ? Number.parseInt(quotedAmount) : null,
-        inquiry_status: status,
+      const res = await fetch(`/api/inquiries/${inquiry.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          admin_notes: adminNotes,
+          quoted_amount: quotedAmount ? Number.parseInt(quotedAmount) : null,
+          inquiry_status: status,
+        }),
       })
 
-      // Show success message
+      if (!res.ok) throw new Error("Failed to update inquiry")
+
       alert("Inquiry updated successfully!")
     } catch (error) {
       console.error("Error updating inquiry:", error)

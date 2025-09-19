@@ -328,7 +328,7 @@ export default function AdminDashboardPage() {
 
                 <div className="text-center">
                   <div className="text-3xl font-bold text-purple-400 mb-2">
-                    KES {Math.round(stats.totalRevenue / stats.confirmedBookings).toLocaleString()}
+                    KES {stats.confirmedBookings > 0 ? Math.round(stats.totalRevenue / stats.confirmedBookings).toLocaleString() : 0}
                   </div>
                   <p className="text-gray-400">Average Booking Value</p>
                   <p className="text-gray-500 text-sm mt-2">Per confirmed booking</p>

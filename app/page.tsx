@@ -186,10 +186,10 @@ export default function HomePage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)
+      setCurrentImageIndex((prev) => (galleryImages.length ? (prev + 1) % galleryImages.length : 0))
     }, 4000)
     return () => clearInterval(interval)
-  }, [])
+  }, [galleryImages.length])
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })

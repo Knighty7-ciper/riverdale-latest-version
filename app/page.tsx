@@ -161,6 +161,12 @@ const customerReviews = [
   },
 ]
 
+// Types for API-mapped home data
+interface HomeDestination { id: string; name: string; description: string; location: string; price: number; duration: string; image_url: string; rating: number; highlights: string[] }
+interface HomeHotel { id: string; name: string; location: string; price: number; rating: number; image_url: string; amenities: string[]; category: string }
+interface GalleryItem { url: string; alt: string }
+interface ReviewItem { id: string; name: string; location?: string; rating: number; comment: string; trip?: string; date?: string; avatar?: string }
+
 export default function HomePage() {
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)

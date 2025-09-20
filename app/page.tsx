@@ -170,6 +170,10 @@ interface ReviewItem { id: string; name: string; location?: string; rating: numb
 export default function HomePage() {
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [featuredDestinations, setFeaturedDestinations] = useState<HomeDestination[]>([])
+  const [luxuryHotels, setLuxuryHotels] = useState<HomeHotel[]>([])
+  const [galleryImages, setGalleryImages] = useState<GalleryItem[]>([])
+  const [customerReviews, setCustomerReviews] = useState<ReviewItem[]>([])
 
   useEffect(() => {
     const handleScroll = () => {

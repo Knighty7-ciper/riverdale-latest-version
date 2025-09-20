@@ -11,6 +11,7 @@ import { LazyImage } from "@/components/ui/lazy-image"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { InquiryForm } from "@/components/inquiry-form"
 import {
   MapPin,
   Star,
@@ -59,14 +60,6 @@ export default function PackageDetailsPage() {
   const [packageData, setPackageData] = useState<PackageData | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [inquiryForm, setInquiryForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    travelDate: "",
-    groupSize: "",
-    specialRequests: "",
-  })
 
   useEffect(() => {
     const fetchPackageData = async () => {
@@ -346,90 +339,11 @@ export default function PackageDetailsPage() {
                     <div className="text-amber-700">per person</div>
                   </div>
 
-                  {/* Inquiry Form */}
-                  <form onSubmit={handleInquirySubmit} className="space-y-4">
-                    <div>
-                      <Label htmlFor="name" className="text-amber-900 font-semibold">
-                        Full Name *
-                      </Label>
-                      <Input
-                        id="name"
-                        value={inquiryForm.name}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, name: e.target.value })}
-                        required
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="email" className="text-amber-900 font-semibold">
-                        Email Address *
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={inquiryForm.email}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
-                        required
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone" className="text-amber-900 font-semibold">
-                        Phone Number *
-                      </Label>
-                      <Input
-                        id="phone"
-                        value={inquiryForm.phone}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, phone: e.target.value })}
-                        required
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="travelDate" className="text-amber-900 font-semibold">
-                        Preferred Travel Date
-                      </Label>
-                      <Input
-                        id="travelDate"
-                        type="date"
-                        value={inquiryForm.travelDate}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, travelDate: e.target.value })}
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="groupSize" className="text-amber-900 font-semibold">
-                        Group Size
-                      </Label>
-                      <Input
-                        id="groupSize"
-                        type="number"
-                        min="1"
-                        max={packageData.maxGroupSize}
-                        value={inquiryForm.groupSize}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, groupSize: e.target.value })}
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="specialRequests" className="text-amber-900 font-semibold">
-                        Special Requests
-                      </Label>
-                      <Textarea
-                        id="specialRequests"
-                        value={inquiryForm.specialRequests}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, specialRequests: e.target.value })}
-                        className="border-amber-200 focus:border-amber-600"
-                        rows={3}
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 text-lg font-semibold rounded-lg transition-all duration-300 hover:scale-105"
-                    >
-                      Send Inquiry
-                    </Button>
-                  </form>
+                  <InquiryForm
+                    packageId={packageData.id}
+                    packageName={packageData.name}
+                    packagePrice={packageData.price}
+                  />
 
                   <div className="mt-6 pt-6 border-t border-amber-200">
                     <div className="flex items-center justify-center gap-4 text-amber-700">

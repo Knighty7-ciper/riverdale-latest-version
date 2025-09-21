@@ -48,6 +48,8 @@ create table if not exists public.destinations (
   status text not null default 'active' check (status in ('active','inactive')),
   created_at timestamptz not null default now()
 );
+-- Ensure column exists on existing DBs before creating index
+alter table if exists public.destinations add column if not exists category text;
 create index if not exists idx_destinations_category on public.destinations(category);
 create index if not exists idx_destinations_featured on public.destinations(featured) where featured = true;
 
@@ -90,11 +92,11 @@ create table if not exists public.hotels (
   featured boolean not null default false,
   created_at timestamptz not null default now()
 );
+-- Ensure column exists on existing DBs before creating index
+alter table if exists public.hotels add column if not exists category text;
 create index if not exists idx_hotels_featured on public.hotels(featured) where featured = true;
 
--- Backfill columns for existing databases
-alter table if exists public.destinations add column if not exists category text;
-alter table if exists public.hotels add column if not exists category text;
+-- Backfill handled above before index creation
 
 -- Inquiries
 do $$

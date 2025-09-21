@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfairDisplay.variable} ${inter.variable} antialiased`}>
       <body className="font-sans bg-background">
-        <Header />
+        <ConditionalHeader />
         {children}
       </body>
     </html>

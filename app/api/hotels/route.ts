@@ -20,8 +20,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get("search")?.trim()
-    const category = searchParams.get("category")?.trim()
-    const featured = searchParams.get("featured")?.trim()
+    // Avoid filtering by columns that may not exist in user DB yet
     const limit = Number.parseInt(searchParams.get("limit") || "60")
 
     let query = supabase.from("hotels").select("*").order("created_at", { ascending: false })
@@ -29,12 +28,9 @@ export async function GET(req: NextRequest) {
     if (search) {
       const like = `%${search}%`
       query = query.or(
-        `name.ilike.${like},description.ilike.${like},location.ilike.${like},country.ilike.${like},category.ilike.${like}`,
+        `name.ilike.${like},description.ilike.${like},location.ilike.${like},country.ilike.${like}`,
       )
     }
-
-    if (category && category !== "all") query = query.eq("category", category)
-    if (featured === "true") query = query.eq("featured", true)
     if (Number.isFinite(limit)) query = query.limit(limit)
 
     const { data, error } = await query

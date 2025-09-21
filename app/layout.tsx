@@ -1,7 +1,7 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Playfair_Display, Inter } from "next/font/google"
-import Header from "@/components/layout/header"
+import ConditionalHeader from "@/components/layout/conditional-header"
 import "./globals.css"
 
 const playfairDisplay = Playfair_Display({
@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfairDisplay.variable} ${inter.variable} antialiased`}>
       <body className="font-sans bg-background">
-        <Header />
+        <ConditionalHeader />
         {children}
       </body>
     </html>

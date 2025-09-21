@@ -1,10 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+const isConfigured =
+  typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
+  typeof process.env.SUPABASE_SERVICE_ROLE_KEY === "string" &&
+  process.env.SUPABASE_SERVICE_ROLE_KEY.length > 0
+
+const supabase = isConfigured
+  ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  : null
 
 export async function GET(request: NextRequest) {
   try {
+    if (!supabase) {
+      return NextResponse.json({ reviews: [] })
+    }
     const { searchParams } = new URL(request.url)
     const packageId = searchParams.get("package_id")
     const limit = searchParams.get("limit")
@@ -18,10 +29,7 @@ export async function GET(request: NextRequest) {
           name,
           slug,
           destinations (
-            name,
-            countries (
-              name
-            )
+            name
           )
         )
       `)
@@ -43,11 +51,15 @@ export async function GET(request: NextRequest) {
     const { data: reviews, error } = await query
 
     if (error) {
+      // If table doesn't exist yet, return empty to avoid homepage 500
+      if ((error as any).code === "42P01") {
+        return NextResponse.json({ reviews: [] })
+      }
       console.error("Error fetching reviews:", error)
-      return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 })
+      return NextResponse.json({ reviews: [] })
     }
 
-    return NextResponse.json({ reviews })
+    return NextResponse.json({ reviews: reviews || [] })
   } catch (error) {
     console.error("Error in reviews API:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -56,6 +68,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabase) {
+      return NextResponse.json({ error: "Email/DB not configured" }, { status: 500 })
+    }
     const body = await request.json()
     const { package_id, customer_name, customer_email, customer_location, title, content, rating, travel_date } = body
 

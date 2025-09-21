@@ -161,9 +161,19 @@ const customerReviews = [
   },
 ]
 
+// Types for API-mapped home data
+interface HomeDestination { id: string; name: string; description: string; location: string; price: number; duration: string; image_url: string; rating: number; highlights: string[] }
+interface HomeHotel { id: string; name: string; location: string; price: number; rating: number; image_url: string; amenities: string[]; category: string }
+interface GalleryItem { url: string; alt: string }
+interface ReviewItem { id: string; name: string; location?: string; rating: number; comment: string; trip?: string; date?: string; avatar?: string }
+
 export default function HomePage() {
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [featuredDestinations, setFeaturedDestinations] = useState<HomeDestination[]>([])
+  const [luxuryHotels, setLuxuryHotels] = useState<HomeHotel[]>([])
+  const [galleryImages, setGalleryImages] = useState<GalleryItem[]>([])
+  const [customerReviews, setCustomerReviews] = useState<ReviewItem[]>([])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -176,9 +186,73 @@ export default function HomePage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)
+      setCurrentImageIndex((prev) => (galleryImages.length ? (prev + 1) % galleryImages.length : 0))
     }, 4000)
     return () => clearInterval(interval)
+  }, [galleryImages.length])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [destRes, hotelRes, reviewRes] = await Promise.all([
+          fetch('/api/destinations?featured=true&limit=6'),
+          fetch('/api/hotels?featured=true&limit=6'),
+          fetch('/api/reviews?featured=true&limit=8'),
+        ])
+        if (destRes.ok) {
+          const dj = await destRes.json()
+          const rows = (dj.destinations || []) as any[]
+          const mapped: HomeDestination[] = rows.map((d:any) => ({
+            id: d.id,
+            name: d.name,
+            description: d.description || '',
+            location: d.location || '',
+            price: d.price_from ?? 0,
+            duration: d.duration || '',
+            image_url: d.image_url,
+            rating: d.rating ?? 0,
+            highlights: Array.isArray(d.highlights) ? d.highlights : [],
+          }))
+          setFeaturedDestinations(mapped)
+          setGalleryImages(mapped.slice(0, 6).map((d) => ({ url: d.image_url, alt: d.name })))
+        }
+        if (hotelRes.ok) {
+          const hj = await hotelRes.json()
+          const rows = (hj.hotels || []) as any[]
+          setLuxuryHotels(rows.map((h:any) => ({
+            id: h.id,
+            name: h.name,
+            location: h.location || '',
+            price: h.price_per_night ?? 0,
+            rating: h.rating ?? 0,
+            image_url: h.image_url,
+            amenities: Array.isArray(h.amenities) ? h.amenities : [],
+            category: h.category || '',
+          })))
+        }
+        if (reviewRes.ok) {
+          const rj = await reviewRes.json()
+          const rows = (rj.reviews || []) as any[]
+          setCustomerReviews(rows.map((r:any) => ({
+            id: r.id,
+            name: r.customer_name,
+            location: r.customer_location,
+            rating: r.rating,
+            comment: r.content,
+            trip: r.packages?.name,
+            date: r.created_at ? new Date(r.created_at).toLocaleDateString() : undefined,
+            avatar: r.customer_name ? r.customer_name.split(' ').map((n:string)=>n[0]).slice(0,2).join('').toUpperCase() : undefined,
+          })))
+        }
+      } catch (e) {
+        console.error('Home data load failed', e)
+        setFeaturedDestinations([])
+        setLuxuryHotels([])
+        setGalleryImages([])
+        setCustomerReviews([])
+      }
+    }
+    load()
   }, [])
 
   const scrollToTop = () => {

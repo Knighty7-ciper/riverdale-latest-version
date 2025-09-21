@@ -11,6 +11,7 @@ import { LazyImage } from "@/components/ui/lazy-image"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { InquiryForm } from "@/components/inquiry-form"
 import {
   MapPin,
   Star,
@@ -59,132 +60,45 @@ export default function PackageDetailsPage() {
   const [packageData, setPackageData] = useState<PackageData | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [inquiryForm, setInquiryForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    travelDate: "",
-    groupSize: "",
-    specialRequests: "",
-  })
-
-  // Mock data - will be replaced with Supabase data
-  const mockPackageData: PackageData = {
-    id: "1",
-    name: "Maasai Mara National Reserve Safari",
-    description:
-      "Witness the world's greatest wildlife spectacle during the Great Migration. Home to the Big Five and endless savannah plains where nature's drama unfolds daily.",
-    location: "Narok County, Kenya",
-    price: 45000,
-    duration: "3 Days / 2 Nights",
-    rating: 4.9,
-    images: [
-      "/maasai-mara-safari.png",
-      "/african-lion-pride-golden-hour.jpg",
-      "/elephants-crossing-river-kenya.jpg",
-      "/hot-air-balloon-safari-kenya.jpg",
-      "/cheetah-running-savannah.jpg",
-    ],
-    highlights: [
-      "Great Migration viewing (July-October)",
-      "Big Five wildlife encounters",
-      "Maasai cultural village visit",
-      "Hot air balloon safari option",
-      "Professional wildlife photography guidance",
-    ],
-    itinerary: [
-      {
-        day: 1,
-        title: "Arrival & First Game Drive",
-        description: "Arrive at Maasai Mara and embark on your first game drive to witness the incredible wildlife.",
-        activities: ["Airport pickup", "Check-in at safari lodge", "Afternoon game drive", "Welcome dinner"],
-        image: "/maasai-mara-safari.png",
-      },
-      {
-        day: 2,
-        title: "Full Day Safari Adventure",
-        description: "Experience a full day of game drives with opportunities to see the Big Five and Great Migration.",
-        activities: ["Early morning game drive", "Bush breakfast", "Cultural village visit", "Evening game drive"],
-        image: "/african-lion-pride-golden-hour.jpg",
-      },
-      {
-        day: 3,
-        title: "Final Game Drive & Departure",
-        description: "Final game drive and departure with unforgettable memories of Kenya's wildlife.",
-        activities: ["Morning game drive", "Brunch at lodge", "Souvenir shopping", "Airport transfer"],
-        image: "/elephants-crossing-river-kenya.jpg",
-      },
-    ],
-    inclusions: [
-      "Airport transfers",
-      "Accommodation in luxury safari lodge",
-      "All meals (breakfast, lunch, dinner)",
-      "Professional safari guide",
-      "Game drives in 4WD safari vehicle",
-      "Park entrance fees",
-      "Bottled water during game drives",
-      "Cultural village visit",
-    ],
-    exclusions: [
-      "International flights",
-      "Travel insurance",
-      "Personal expenses",
-      "Alcoholic beverages",
-      "Hot air balloon safari (optional extra)",
-      "Tips and gratuities",
-      "Visa fees",
-    ],
-    requirements: [
-      "Valid passport with 6+ months validity",
-      "Yellow fever vaccination certificate",
-      "Comfortable safari clothing",
-      "Sun protection (hat, sunscreen)",
-      "Binoculars and camera",
-      "Insect repellent",
-    ],
-    bestTime: "July - October (Great Migration)",
-    difficulty: "Easy",
-    maxGroupSize: 8,
-  }
 
   useEffect(() => {
-    // Simulate API call - replace with actual Supabase query
     const fetchPackageData = async () => {
-      setLoading(true)
-      // TODO: Replace with actual Supabase query
-      setTimeout(() => {
-        setPackageData(mockPackageData)
+      try {
+        setLoading(true)
+        const id = params.id as string
+        const res = await fetch(`/api/packages/${id}`)
+        if (!res.ok) throw new Error("Failed to load package")
+        const json = await res.json()
+        const p = json.package
+        const details: PackageData = {
+          id: p.id,
+          name: p.name,
+          description: p.description || "",
+          location: p.destinations?.location || p.destinations?.country || "",
+          price: p.base_price ?? 0,
+          duration: p.duration || "",
+          rating: p.rating ?? 0,
+          images: Array.isArray(p.images) ? p.images : [],
+          highlights: Array.isArray(p.highlights) ? p.highlights : [],
+          itinerary: Array.isArray(p.itinerary) ? p.itinerary : [],
+          inclusions: Array.isArray(p.inclusions) ? p.inclusions : [],
+          exclusions: Array.isArray(p.exclusions) ? p.exclusions : [],
+          requirements: [],
+          bestTime: p.best_time || "",
+          difficulty: p.difficulty || "",
+          maxGroupSize: p.max_group_size ?? 0,
+        }
+        setPackageData(details)
+      } catch (e) {
+        console.error(e)
+        setPackageData(null)
+      } finally {
         setLoading(false)
-      }, 1000)
+      }
     }
 
     fetchPackageData()
   }, [params.id])
-
-  const handleInquirySubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Generate verification ID
-    const verificationId = `RVD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`
-
-    // TODO: Submit to Supabase with verification ID
-    console.log("Inquiry submitted:", { ...inquiryForm, verificationId, packageId: params.id })
-
-    // TODO: Send email notification to admin
-    alert(
-      `Thank you for your inquiry! Your verification ID is: ${verificationId}. We will contact you within 24 hours.`,
-    )
-
-    // Reset form
-    setInquiryForm({
-      name: "",
-      email: "",
-      phone: "",
-      travelDate: "",
-      groupSize: "",
-      specialRequests: "",
-    })
-  }
 
   if (loading) {
     return (
@@ -425,90 +339,11 @@ export default function PackageDetailsPage() {
                     <div className="text-amber-700">per person</div>
                   </div>
 
-                  {/* Inquiry Form */}
-                  <form onSubmit={handleInquirySubmit} className="space-y-4">
-                    <div>
-                      <Label htmlFor="name" className="text-amber-900 font-semibold">
-                        Full Name *
-                      </Label>
-                      <Input
-                        id="name"
-                        value={inquiryForm.name}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, name: e.target.value })}
-                        required
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="email" className="text-amber-900 font-semibold">
-                        Email Address *
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={inquiryForm.email}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
-                        required
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone" className="text-amber-900 font-semibold">
-                        Phone Number *
-                      </Label>
-                      <Input
-                        id="phone"
-                        value={inquiryForm.phone}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, phone: e.target.value })}
-                        required
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="travelDate" className="text-amber-900 font-semibold">
-                        Preferred Travel Date
-                      </Label>
-                      <Input
-                        id="travelDate"
-                        type="date"
-                        value={inquiryForm.travelDate}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, travelDate: e.target.value })}
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="groupSize" className="text-amber-900 font-semibold">
-                        Group Size
-                      </Label>
-                      <Input
-                        id="groupSize"
-                        type="number"
-                        min="1"
-                        max={packageData.maxGroupSize}
-                        value={inquiryForm.groupSize}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, groupSize: e.target.value })}
-                        className="border-amber-200 focus:border-amber-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="specialRequests" className="text-amber-900 font-semibold">
-                        Special Requests
-                      </Label>
-                      <Textarea
-                        id="specialRequests"
-                        value={inquiryForm.specialRequests}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, specialRequests: e.target.value })}
-                        className="border-amber-200 focus:border-amber-600"
-                        rows={3}
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 text-lg font-semibold rounded-lg transition-all duration-300 hover:scale-105"
-                    >
-                      Send Inquiry
-                    </Button>
-                  </form>
+                  <InquiryForm
+                    packageId={packageData.id}
+                    packageName={packageData.name}
+                    packagePrice={packageData.price}
+                  />
 
                   <div className="mt-6 pt-6 border-t border-amber-200">
                     <div className="flex items-center justify-center gap-4 text-amber-700">

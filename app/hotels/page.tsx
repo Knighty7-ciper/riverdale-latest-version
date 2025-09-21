@@ -33,73 +33,36 @@ export default function HotelsPage() {
   const [priceFilter, setPriceFilter] = useState("all")
   const [loading, setLoading] = useState(true)
 
-  // Mock data - will be replaced with Supabase data
-  const mockHotels: Hotel[] = [
-    {
-      id: "safari-lodge-mara",
-      name: "Safari Lodge Mara",
-      description: "Luxury tented camp overlooking the Maasai Mara with spectacular wildlife viewing opportunities.",
-      location: "Maasai Mara, Kenya",
-      price_per_night: 15000,
-      rating: 4.8,
-      reviews_count: 156,
-      image_url: "/luxury-safari-camp-maasai-mara.jpg",
-      category: "Safari Lodge",
-      amenities: ["Free WiFi", "Restaurant", "Game Drives", "Spa"],
-      featured: true,
-    },
-    {
-      id: "diani-beach-resort",
-      name: "Diani Beach Resort",
-      description: "Beachfront resort with pristine white sand beaches and world-class amenities.",
-      location: "Diani Beach, Kenya",
-      price_per_night: 12000,
-      rating: 4.6,
-      reviews_count: 203,
-      image_url: "/luxury-beach-resort-diani-kenya.jpg",
-      category: "Beach Resort",
-      amenities: ["Free WiFi", "Pool", "Beach Access", "Water Sports"],
-      featured: true,
-    },
-    {
-      id: "nairobi-city-hotel",
-      name: "Nairobi City Hotel",
-      description: "Modern business hotel in the heart of Nairobi with excellent conference facilities.",
-      location: "Nairobi, Kenya",
-      price_per_night: 8000,
-      rating: 4.4,
-      reviews_count: 89,
-      image_url: "/modern-city-hotel.png",
-      category: "City Hotel",
-      amenities: ["Free WiFi", "Business Center", "Gym", "Restaurant"],
-      featured: false,
-    },
-    {
-      id: "mount-kenya-lodge",
-      name: "Mount Kenya Safari Lodge",
-      description: "Mountain lodge with stunning views and access to hiking trails and wildlife.",
-      location: "Mount Kenya, Kenya",
-      price_per_night: 10000,
-      rating: 4.7,
-      reviews_count: 67,
-      image_url: "/mountain-lodge-kenya-luxury.jpg",
-      category: "Mountain Lodge",
-      amenities: ["Restaurant", "Hiking Trails", "Wildlife Viewing", "Fireplace"],
-      featured: false,
-    },
-  ]
-
   useEffect(() => {
-    // Simulate API call - replace with actual Supabase query
     const fetchHotels = async () => {
-      setLoading(true)
-      // TODO: Replace with actual Supabase query
-      // const { data, error } = await supabase.from('hotels').select('*')
-      setTimeout(() => {
-        setHotels(mockHotels)
-        setFilteredHotels(mockHotels)
+      try {
+        setLoading(true)
+        const params = new URLSearchParams()
+        const res = await fetch(`/api/hotels?${params.toString()}`)
+        if (!res.ok) throw new Error("Failed to load hotels")
+        const json = await res.json()
+        const rows: Hotel[] = (json.hotels || []).map((h: any) => ({
+          id: h.id,
+          name: h.name,
+          description: h.description,
+          location: h.location,
+          price_per_night: h.price_per_night ?? 0,
+          rating: h.rating ?? 0,
+          reviews_count: h.reviews_count ?? 0,
+          image_url: h.image_url,
+          category: h.category || "",
+          amenities: Array.isArray(h.amenities) ? h.amenities : [],
+          featured: !!h.featured,
+        }))
+        setHotels(rows)
+        setFilteredHotels(rows)
+      } catch (e) {
+        console.error(e)
+        setHotels([])
+        setFilteredHotels([])
+      } finally {
         setLoading(false)
-      }, 1000)
+      }
     }
 
     fetchHotels()

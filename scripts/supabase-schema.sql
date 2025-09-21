@@ -125,6 +125,8 @@ create table if not exists public.inquiries (
   inquiry_status inquiry_status not null default 'pending',
   created_at timestamptz not null default now()
 );
+-- Ensure column exists on existing DBs before index creation
+alter table if exists public.inquiries add column if not exists inquiry_status inquiry_status not null default 'pending';
 create index if not exists idx_inquiries_status on public.inquiries(inquiry_status);
 create index if not exists idx_inquiries_created on public.inquiries(created_at desc);
 

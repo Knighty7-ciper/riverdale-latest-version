@@ -93,7 +93,12 @@ create table if not exists public.hotels (
 create index if not exists idx_hotels_featured on public.hotels(featured) where featured = true;
 
 -- Inquiries
-create type if not exists inquiry_status as enum ('pending','contacted','quoted','confirmed','cancelled');
+do $$
+begin
+  create type inquiry_status as enum ('pending','contacted','quoted','confirmed','cancelled');
+exception when duplicate_object then
+  null;
+end $$;
 
 create table if not exists public.inquiries (
   id uuid primary key default gen_random_uuid(),

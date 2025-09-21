@@ -163,76 +163,162 @@ alter table public.notification_queue enable row level security;
 alter table public.profiles enable row level security;
 
 -- Public read policies for read-only content
-create policy if not exists "destinations_read" on public.destinations
-  for select using (true);
-create policy if not exists "packages_read" on public.packages
-  for select using (true);
-create policy if not exists "hotels_read" on public.hotels
-  for select using (true);
-create policy if not exists "reviews_read_public" on public.customer_reviews
-  for select using (admin_approved = true);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='destinations' and policyname='destinations_read'
+  ) then
+    create policy "destinations_read" on public.destinations for select using (true);
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='packages' and policyname='packages_read'
+  ) then
+    create policy "packages_read" on public.packages for select using (true);
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='hotels' and policyname='hotels_read'
+  ) then
+    create policy "hotels_read" on public.hotels for select using (true);
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='customer_reviews' and policyname='reviews_read_public'
+  ) then
+    create policy "reviews_read_public" on public.customer_reviews for select using (admin_approved = true);
+  end if;
+end $$;
 
 -- Write restricted to admins (checked via JWT; fallback is service role bypass)
-create policy if not exists "destinations_write_admin" on public.destinations
-  for all using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role in ('admin','staff')
-    )
-  ) with check (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role in ('admin','staff')
-    )
-  );
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='destinations' and policyname='destinations_write_admin'
+  ) then
+    create policy "destinations_write_admin" on public.destinations
+      for all using (
+        exists (
+          select 1 from public.profiles p
+          where p.id = auth.uid() and p.role in ('admin','staff')
+        )
+      ) with check (
+        exists (
+          select 1 from public.profiles p
+          where p.id = auth.uid() and p.role in ('admin','staff')
+        )
+      );
+  end if;
+end $$;
 
-create policy if not exists "packages_write_admin" on public.packages
-  for all using (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  ) with check (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  );
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='packages' and policyname='packages_write_admin'
+  ) then
+    create policy "packages_write_admin" on public.packages
+      for all using (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      ) with check (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      );
+  end if;
+end $$;
 
-create policy if not exists "hotels_write_admin" on public.hotels
-  for all using (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  ) with check (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  );
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='hotels' and policyname='hotels_write_admin'
+  ) then
+    create policy "hotels_write_admin" on public.hotels
+      for all using (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      ) with check (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      );
+  end if;
+end $$;
 
 -- Inquiries: allow inserts from anon, read/write for admins
-create policy if not exists "inquiries_insert_public" on public.inquiries
-  for insert with check (true);
-create policy if not exists "inquiries_read_admin" on public.inquiries
-  for select using (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  );
-create policy if not exists "inquiries_update_admin" on public.inquiries
-  for update using (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  ) with check (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  );
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='inquiries' and policyname='inquiries_insert_public'
+  ) then
+    create policy "inquiries_insert_public" on public.inquiries for insert with check (true);
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='inquiries' and policyname='inquiries_read_admin'
+  ) then
+    create policy "inquiries_read_admin" on public.inquiries
+      for select using (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      );
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='inquiries' and policyname='inquiries_update_admin'
+  ) then
+    create policy "inquiries_update_admin" on public.inquiries
+      for update using (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      ) with check (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      );
+  end if;
+end $$;
 
 -- Reviews: public can insert; admin approves
-create policy if not exists "reviews_insert_public" on public.customer_reviews
-  for insert with check (true);
-create policy if not exists "reviews_update_admin" on public.customer_reviews
-  for update using (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  ) with check (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
-  );
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='customer_reviews' and policyname='reviews_insert_public'
+  ) then
+    create policy "reviews_insert_public" on public.customer_reviews for insert with check (true);
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='customer_reviews' and policyname='reviews_update_admin'
+  ) then
+    create policy "reviews_update_admin" on public.customer_reviews
+      for update using (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      ) with check (
+        exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff'))
+      );
+  end if;
+end $$;
 
 -- Profiles: only owner or admin can read/update
-create policy if not exists "profiles_self_read" on public.profiles
-  for select using (auth.uid() = id);
-create policy if not exists "profiles_admin_read" on public.profiles
-  for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff')));
-create policy if not exists "profiles_self_upsert" on public.profiles
-  for insert with check (auth.uid() = id);
-create policy if not exists "profiles_self_update" on public.profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='profiles' and policyname='profiles_self_read'
+  ) then
+    create policy "profiles_self_read" on public.profiles for select using (auth.uid() = id);
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='profiles' and policyname='profiles_admin_read'
+  ) then
+    create policy "profiles_admin_read" on public.profiles for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','staff')));
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='profiles' and policyname='profiles_self_upsert'
+  ) then
+    create policy "profiles_self_upsert" on public.profiles for insert with check (auth.uid() = id);
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='profiles' and policyname='profiles_self_update'
+  ) then
+    create policy "profiles_self_update" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+  end if;
+end $$;
 
 -- Helpers: ensure an admin user (run manually once with your user id)
 -- insert into public.profiles(id, role) values ('<your-auth-user-id>', 'admin') on conflict (id) do update set role='admin';

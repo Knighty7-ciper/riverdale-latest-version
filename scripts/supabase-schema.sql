@@ -92,6 +92,10 @@ create table if not exists public.hotels (
 );
 create index if not exists idx_hotels_featured on public.hotels(featured) where featured = true;
 
+-- Backfill columns for existing databases
+alter table if exists public.destinations add column if not exists category text;
+alter table if exists public.hotels add column if not exists category text;
+
 -- Inquiries
 do $$
 begin
